@@ -46,3 +46,9 @@
 # Embedded web-server pid file
 /.web-server-pid
 .env
+
+/data
+/.idea
+.phpunit.result.cache
+.env.example
+/src/.env.test
