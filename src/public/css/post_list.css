@@ -1,0 +1,86 @@
+/* public/css/post_list.css */
+
+body {
+    font-family: 'Georgia', serif;
+    line-height: 1.6;
+    background: #f4f4f4;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background: #333;
+    color: #fff;
+    padding: 10px 0;
+    text-align: center;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 2rem;
+}
+
+header nav ul {
+    list-style: none;
+    padding: 0;
+}
+
+header nav ul li {
+    display: inline;
+    margin: 0 10px;
+}
+
+header nav ul li a {
+    color: #fff;
+    text-decoration: none;
+}
+
+.posts {
+    background: #fff;
+    margin: 20px auto;
+    padding: 20px;
+    max-width: 800px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.post {
+    border-bottom: 1px solid #eee;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+}
+
+.post h2 {
+    font-size: 2rem;
+    margin: 0 0 10px;
+}
+
+.post-meta {
+    color: #999;
+}
+
+.post p {
+    font-size: 1.125rem;
+}
+
+.post a {
+    color: #333;
+    text-decoration: none;
+}
+
+.pagination {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.pagination a, .pagination span {
+    display: inline-block;
+    margin: 0 5px;
+    padding: 5px 10px;
+    color: #333;
+    text-decoration: none;
+}
+
+.pagination .current {
+    font-weight: bold;
+    text-decoration: underline;
+}
