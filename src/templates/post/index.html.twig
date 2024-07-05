@@ -12,10 +12,10 @@
         <h2>Recent Posts</h2>
         {% for post in pagination.items %}
             <article class="post">
-                <h2><a href="{{ path('app_post_show', { 'id': post.id }) }}">{{ post.title }}</a></h2>
+                <h2><a href="{{ path('app_post_show', { 'slug': post.slug }) }}">{{ post.title }}</a></h2>
                 <p class="post-meta">Published on {{ post.createdAt|date('F j, Y') }}</p>
                 <p>{{ post.content|raw|slice(0, 200) }}...</p>
-                <a href="{{ path('app_post_show', { 'id': post.id }) }}">Read more</a>
+                <a href="{{ path('app_post_show', { 'slug': post.slug }) }}">Read more</a>
             </article>
         {% endfor %}
     </div>

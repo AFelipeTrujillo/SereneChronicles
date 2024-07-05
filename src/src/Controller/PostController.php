@@ -52,9 +52,13 @@ class PostController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}', name: 'app_post_show', methods: ['GET'])]
-    public function show(Post $post): Response
+    # TODO: Check why the Autowire does not work with Post $post
+    //public function show(Post $post): Response
+    #[Route('/{slug}', name: 'app_post_show', methods: ['GET'])]
+    public function show(string $slug, PostRepository $postRepository): Response
     {
+        $post = $postRepository->findOneBy(['slug' => $slug]);
+
         return $this->render('post/show.html.twig', [
             'post' => $post,
         ]);

@@ -7,8 +7,11 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\String\Slugger\AsciiSlugger;
 
 #[ORM\Entity(repositoryClass: PostRepository::class)]
+#[UniqueEntity('slug')]
 class Post
 {
     #[ORM\Id]
@@ -18,7 +21,7 @@ class Post
 
     #[ORM\Column(length: 255)]
     private ?string $title = null;
-
+    
     #[ORM\Column(type: Types::TEXT)]
     private ?string $content = null;
 
@@ -33,6 +36,9 @@ class Post
      */
     #[ORM\OneToMany(targetEntity: Comment::class, mappedBy: 'post')]
     private Collection $comments;
+
+    #[ORM\Column(length: 255, unique: true)]
+    private ?string $slug = null;
 
     public function __construct()
     {
@@ -120,5 +126,29 @@ class Post
         }
 
         return $this;
+    }
+
+    public function getSlug(): ?string
+    {
+        return $this->slug;
+    }
+
+    public function setSlug(string $slug): static
+    {
+        $this->slug = $slug;
+
+        return $this;
+    }
+
+    /**
+     * @ORM\PrePersist
+     * @ORM\PreUpdate
+     */
+    public function setSlugValue(): void
+    {
+        if (empty($this->slug)) {
+            $slugger = new AsciiSlugger();
+            $this->slug = $slugger->slug($this->title)->lower();
+        }
     }
 }
