@@ -1,4 +1,21 @@
-{{ form_start(form) }}
-    {{ form_widget(form) }}
-    <button class="btn">{{ button_label|default('Save') }}</button>
+{{ form_start(form, {'attr': {'class': 'post-form'}}) }}
+<div class="form-group">
+    {{ form_label(form.title, 'Title', {'label_attr': {'class': 'form-label'}}) }}
+    {{ form_widget(form.title, {'attr': {'class': 'form-control', 'placeholder': 'Enter the title'}}) }}
+    {{ form_errors(form.title) }}
+</div>
+
+<div class="form-group">
+    {{ form_label(form.content, 'Content', {'label_attr': {'class': 'form-label'}}) }}
+    {{ form_widget(form.content, {'attr': {'class': 'form-control', 'rows': '10', 'placeholder': 'Write your content here...'}}) }}
+    {{ form_errors(form.content) }}
+</div>
+
+<div class="form-group">
+    {{ form_label(form.slug, 'Slug', {'label_attr': {'class': 'form-label'}}) }}
+    {{ form_widget(form.slug, {'attr': {'class': 'form-control', 'placeholder': 'Enter the slug'}}) }}
+    {{ form_errors(form.slug) }}
+</div>
+
+<button type="submit" class="btn btn-primary">{{ button_label|default('Save') }}</button>
 {{ form_end(form) }}

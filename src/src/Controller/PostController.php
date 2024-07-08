@@ -24,12 +24,6 @@ class PostController extends AbstractController
         return $this->render('post/index.html.twig',[
             'pagination' => $pagination
         ]);
-
-//        return $this->render('post/index.html.twig', [
-//            'posts' => $postRepository->findAll(),
-//        ]);
-
-
     }
 
     #[Route('/new', name: 'app_post_new', methods: ['GET', 'POST'])]
@@ -40,6 +34,7 @@ class PostController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $post->setCreatedAt(new \DateTimeImmutable());
             $entityManager->persist($post);
             $entityManager->flush();
 
