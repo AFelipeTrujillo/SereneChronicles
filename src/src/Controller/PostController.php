@@ -18,8 +18,15 @@ class PostController extends AbstractController
     #[Route('/', name: 'app_post_index', methods: ['GET'])]
     public function index(PostRepository $postRepository, PaginatorInterface $paginator, Request $request): Response
     {
-        $queryBuilder = $postRepository->createQueryBuilder('p')->orderBy('p.created_at', 'DESC');
-        $pagination = $paginator->paginate($queryBuilder, $request->query->getInt('page', 1));
+        $searchTerm = $request->query->get('q');
+
+        if($searchTerm) {
+            $query = $postRepository->findByTitleOrContent($searchTerm);
+        } else {
+            $query = $postRepository->findForIndexPage();
+        }
+
+        $pagination = $paginator->paginate($query, $request->query->getInt('page', 1));
 
         return $this->render('post/index.html.twig',[
             'pagination' => $pagination

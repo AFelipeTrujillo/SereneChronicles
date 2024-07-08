@@ -9,7 +9,11 @@
 
 {% block body %}
     <div class="posts">
-        <h2>Recent Posts</h2>
+        <form method="get" action="{{ path('app_post_index') }}" class="search-form">
+            <input type="text" name="q" value="{{ app.request.get('q') }}" placeholder="Search by title or content...">
+            <button type="submit">Search</button>
+        </form>
+
         {% for post in pagination.items %}
             <article class="post">
                 <h2><a href="{{ path('app_post_show', { 'slug': post.slug }) }}">{{ post.title }}</a></h2>
