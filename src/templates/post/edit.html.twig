@@ -2,6 +2,8 @@
 
 {% block title %}Edit Post{% endblock %}
 
+
+{# TODO: Delete button does not work for CSRF #}
 {% block body %}
-    {{ include('post/_form.html.twig', {'button_label': 'Update', 'delete' : true}) }}
+    {{ include('post/_form.html.twig', {'button_label': 'Update', 'delete' : false}) }}
 {% endblock %}

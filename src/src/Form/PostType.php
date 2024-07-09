@@ -30,6 +30,7 @@ class PostType extends AbstractType
 
         $builder->addEventListener(FormEvents::POST_SUBMIT, function(FormEvent $event) {
             $form = $event->getForm();
+            /** @var Post $post */
             $post = $event->getData();
 
             $existingPost = $this->entityManager->getRepository(Post::class)->findOneBy(['slug' => $post->getSlug()]);
