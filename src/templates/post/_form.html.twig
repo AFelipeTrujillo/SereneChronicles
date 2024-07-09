@@ -18,4 +18,7 @@
 </div>
 
 <button type="submit" class="btn btn-primary">{{ button_label|default('Save') }}</button>
+{% if delete %}
+    {{ include('post/_delete_form.html.twig') }}
+{% endif %}
 {{ form_end(form) }}

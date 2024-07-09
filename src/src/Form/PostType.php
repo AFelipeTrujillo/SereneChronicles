@@ -34,7 +34,10 @@ class PostType extends AbstractType
 
             $existingPost = $this->entityManager->getRepository(Post::class)->findOneBy(['slug' => $post->getSlug()]);
 
-            if ($existingPost) $form->get('slug')->addError(new FormError('The slug is already in use.'));
+            if ($existingPost && $existingPost->getId() !== $post->getId()) $form->get('slug')->addError(new FormError('The slug is already in use.'));
+
+            $post->setSlugValue();
+
         });
     }
 

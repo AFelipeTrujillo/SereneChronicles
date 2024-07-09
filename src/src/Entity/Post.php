@@ -146,7 +146,7 @@ class Post
      */
     public function setSlugValue(): void
     {
-        if (empty($this->slug)) {
+        if (!empty($this->slug)) {
             $slugger = new AsciiSlugger();
             $this->slug = $slugger->slug($this->title)->lower();
         }
