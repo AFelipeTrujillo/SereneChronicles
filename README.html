@@ -33,33 +33,335 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>README - Serene Chronicles</h1>
+<div class="container">
+    <h1>README - Serene Chronicles</h1>
 
-        <h2>Getting Started</h2>
-        <p>To start using Serene Chronicles, follow these steps:</p>
+    <h2>Getting Started</h2>
+    <p>To start using Serene Chronicles, follow these steps:</p>
 
-        <h3>1. Clone the Repository</h3>
-        <pre><code>git clone https://github.com/tuusuario/serene-chronicles.git</code></pre>
+    <h3>1. Clone the Repository</h3>
+    <pre><code>git clone https://github.com/tuusuario/serene-chronicles.git</code></pre>
 
-        <h3>2. Navigate to the Project Directory</h3>
-        <pre><code>cd serene-chronicles</code></pre>
+    <h3>2. Navigate to the Project Directory</h3>
+    <pre><code>cd serene-chronicles</code></pre>
 
-        <h3>3. Create Symfony Project</h3>
-        <p>Create a new Symfony project using Symfony CLI:</p>
-        <pre><code>symfony new ./ --version=7.* --webapp</code></pre>
-        <p>This command creates a new Symfony project with the necessary structure, including assets and a default web server configuration.</p>
+    <h3>3. Create Symfony Project</h3>
+    <p>Create a new Symfony project using Symfony CLI:</p>
+    <pre><code>symfony new ./ --version=7.* --webapp</code></pre>
+    <p>This command creates a new Symfony project with the necessary structure, including assets and a default web server configuration.</p>
 
-        <h3>4. Build and Start Docker Containers</h3>
-        <p>If not already done, build and start the Docker containers:</p>
-        <pre><code>docker-compose up --build</code></pre>
-        <p>This command builds the necessary Docker images and starts the containers defined in <code>docker-compose.yml</code>.</p>
+    <h3>4. Build and Start Docker Containers</h3>
+    <p>If not already done, build and start the Docker containers:</p>
+    <pre><code>docker-compose up --build</code></pre>
+    <p>This command builds the necessary Docker images and starts the containers defined in <code>docker-compose.yml</code>.</p>
 
-        <h3>5. Access the Application</h3>
-        <p>Access your application in the browser at <code>http://localhost:9090</code>.</p>
+    <h3>5. Access the Application</h3>
+    <p>Access your application in the browser at <code>http://localhost:9090</code>.</p>
 
-        <!-- More sections can be added here as you continue developing your README.html -->
+    <h2>Project Setup</h2>
+    <p>We have configured our project to use Docker for the environment setup and Symfony for the application framework. Here are the main configurations and steps we followed:</p>
 
+    <h3>Docker Configuration</h3>
+    <p>Our Docker setup includes a PHP-Apache container and a MySQL container. Here is the <code>docker-compose.yml</code> file:</p>
+    <pre><code>
+version: '3.8'
+
+services:
+  php-apache:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./src/:/var/www/html/
+    ports:
+      - "9090:80"
+      - "9091:8000"
+    environment:
+      - APACHE_RUN_USER=www-data
+      - APACHE_RUN_GROUP=www-data
+      - DATABASE_URL=mysql://myuser:mypassword@mysql:3306/mydatabase
+    networks:
+      - app-network
+
+  mysql:
+    image: mysql:latest
+    environment:
+      MYSQL_DATABASE: mydatabase
+      MYSQL_USER: myuser
+      MYSQL_PASSWORD: mypassword
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+
+volumes:
+  mysql_data:
+
+networks:
+  app-network:
+    driver: bridge
+        </code></pre>
+
+    <h3>Dockerfile Configuration</h3>
+    <p>Our Dockerfile is set up to install all necessary dependencies, including PHP extensions, Node.js, and Symfony CLI. Here is the <code>Dockerfile</code>:</p>
+    <pre><code>
+# Use official PHP image with Apache
+FROM php:8.2-apache
+
+# Install necessary dependencies to build extensions and librabbitmq
+RUN apt-get update && apt-get install -y \
+    libicu-dev \
+    libpq-dev \
+    libxslt-dev \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+    libssl-dev \
+    libsodium-dev \
+    libssh-dev \
+    libmagickwand-dev \
+    libmagickcore-dev \
+    wget \
+    unzip \
+    git \
+    pkg-config \
+    librabbitmq-dev \
+    curl \
+    libmariadb-dev-compat \
+    libmariadb-dev
+
+# Install PHP extensions
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install \
+    intl \
+    pdo_mysql \
+    xsl \
+    gd \
+    opcache \
+    sodium \
+    bcmath
+
+# Install AMQP extension
+RUN pecl install amqp \
+    && docker-php-ext-enable amqp
+
+# Install Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# Enable Apache rewrite module
+RUN a2enmod rewrite
+
+# Install Node.js and npm
+RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - \
+    && apt-get install -y nodejs
+
+# Install Symfony CLI
+RUN wget https://get.symfony.com/cli/installer -O - | bash \
+    && mv /root/.symfony*/bin/symfony /usr/local/bin/symfony
+
+# Configure Apache to point to /var/www/html/public directory
+RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf
+RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/apache2.conf
+
+# Expose port 80
+EXPOSE 80
+
+# Set working directory
+WORKDIR /var/www/html
+
+# Copy application source code into the container
+COPY . /var/www/html
+
+# Optionally grant permissions to www-data user
+# RUN chown -R www-data:www-data /var/www/html
+
+# Run Apache in foreground
+CMD ["apache2-foreground"]
+        </code></pre>
+
+    <h3>Setting Up Database</h3>
+    <p>We configured Doctrine to use MySQL. Here is the <code>doctrine.yaml</code> configuration file:</p>
+    <pre><code>
+doctrine:
+    dbal:
+        url: '%env(resolve:DATABASE_URL)%'
+        driver: 'pdo_mysql'
+        charset: utf8mb4
+    orm:
+        auto_generate_proxy_classes: true
+        naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
+        auto_mapping: true
+        mappings:
+            App:
+                is_bundle: false
+                type: annotation
+                dir: '%kernel.project_dir%/src/Entity'
+                prefix: 'App\Entity'
+                alias: App
+        </code></pre>
+
+    <h3>Installing Required Packages</h3>
+    <p>We installed the required packages using Composer:</p>
+    <pre><code>composer require symfony/orm-pack</code></pre>
+    <pre><code>composer require --dev symfony/maker-bundle</code></pre>
+
+    <h2>Implementing Core Features</h2>
+    <h3>Creating and Managing Posts</h3>
+    <p>We created the <code>Post</code> entity and the corresponding form type. We also set up validation for unique slugs:</p>
+    <pre><code>
+<?php
+
+namespace App\Form;
+
+use App\Entity\Post;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormError;
+use Symfony\Component\Form\FormEvent;
+use Symfony\Component\Form\FormEvents;
+use Symfony\Component\OptionsResolver\OptionsResolver;
+
+class PostType extends AbstractType
+{
+    private $entityManager;
+
+    public function __construct(EntityManagerInterface $entityManager)
+    {
+        $this->entityManager = $entityManager;
+    }
+
+    public function buildForm(FormBuilderInterface $builder, array $options): void
+    {
+        $builder
+            ->add('title')
+            ->add('content')
+            ->add('slug')
+        ;
+
+        $builder->addEventListener(FormEvents::POST_SUBMIT, function(FormEvent $event) {
+            $form = $event->getForm();
+            $post = $event->getData();
+
+            $existingPost = $this->entityManager->getRepository(Post::class)->findOneBy(['slug' => $post->getSlug()]);
+
+            if ($existingPost && $existingPost->getId() !== $post->getId()) {
+                $form->get('slug')->addError(new FormError('The slug is already in use.'));
+            }
+        });
+    }
+
+    public function configureOptions(OptionsResolver $resolver): void
+    {
+        $resolver->setDefaults([
+            'data_class' => Post::class,
+        ]);
+    }
+}
+        </code></pre>
+
+    <h3>Adding Slug Field to Existing Posts</h3>
+    <p>We added a slug field to the <code>Post</code> entity and created a migration to update existing posts.</p>
+    <pre><code>php bin/console make:migration</code></pre>
+    <pre><code>php bin/console doctrine:migrations:migrate</code></pre>
+
+    <h3>Post Templates</h3>
+    <p>We created templates for displaying the list of posts and individual post details.</p>
+    <p>Here is the <code>post/index.html.twig</code>:</p>
+    <pre><code>
+{# templates/post/index.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Posts | Serene Chronicles{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('css/post_list.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div class="posts">
+        <h2>Recent Posts</h2>
+        <form method="get" action="{{ path('app_post_index') }}">
+            <input type="text" name="search" placeholder="Search by title or content" value="{{ app.request.query.get('search', '') }}">
+            <button type="submit">Search</button>
+        </form>
+        {% for post in pagination.items %}
+            <article class="post">
+                <h2><a href="{{ path('app_post_show', { 'slug': post.slug }) }}">{{ post.title }}</a></h2>
+                <p class="post-meta">Published on {{ post.createdAt|date('F j, Y') }}</p>
+                <p>{{ post.content|raw|slice(0, 200) }}...</p>
+                <a href="{{ path('app_post_show', { 'slug': post.slug }) }}">Read more</a>
+            </article>
+        {% endfor %}
     </div>
+
+    <div class="pagination">
+        {{ knp_pagination_render(pagination) }}
+    </div>
+{% endblock %}
+        </code></pre>
+
+    <p>And here is the <code>post/show.html.twig</code> with the edit button added:</p>
+    <pre><code>
+{% extends 'base.html.twig' %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('css/post.css') }}">
+{% endblock %}
+
+{% block title %}{{ post.title }} | Serene Chronicles{% endblock %}
+
+{% block body %}
+    <article class="post">
+        <header class="post-header">
+            <h1 class="post-title">{{ post.title }}</h1>
+            <p class="post-meta">Published on {{ post.createdAt|date('F j, Y') }}</p>
+        </header>
+        <section class="post-content">
+            {{ post.content|raw }}
+        </section>
+        <a href="{{ path('app_post_edit', { 'id': post.id }) }}">Edit Post</a>
+    </article>
+{% endblock %}
+        </code></pre>
+
+    <h3>Adding Search Functionality</h3>
+    <p>We added a search form to the index page to search posts by title or content. Here is the updated <code>PostRepository</code> with the search functionality:</p>
+    <pre><code>
+public function findByTitleOrContent(string $searchTerm) : \Doctrine\ORM\Query
+{
+    return $this->createQueryBuilder('p')
+        ->where('p.title LIKE :searchTerm')
+        ->orWhere('p.content LIKE :searchTerm')
+        ->setParameter('searchTerm', '%' . $searchTerm . '%')
+        ->orderBy('p.created_at', 'DESC')
+        ->getQuery()
+    ;
+}
+        </code></pre>
+
+    <p>We also added pagination to the post listing using KnpPaginatorBundle. Here is the updated index action in the <code>PostController</code>:</p>
+    <pre><code>
+public function index(Request $request, PaginatorInterface $paginator): Response
+{
+    $searchTerm = $request->query->get('search', '');
+
+    $query = $this->getDoctrine()
+        ->getRepository(Post::class)
+        ->findByTitleOrContent($searchTerm);
+
+    $pagination = $paginator->paginate(
+        $query,
+        $request->query->getInt('page', 1),
+        10
+    );
+
+    return $this->render('post/index.html.twig', [
+        'pagination' => $pagination,
+    ]);
+}
+        </code></pre>
+</div>
 </body>
 </html>

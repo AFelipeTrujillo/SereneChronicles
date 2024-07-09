@@ -1,220 +1,345 @@
-Serene Chronicles
-=================
-
-A personal blog project built with Symfony 7 and MySQL, inspired by Medium.
+README - Serene Chronicles
+==========================
 
 Getting Started
 ---------------
 
-Follow these instructions to set up and run the project on your local machine.
+To start using Serene Chronicles, follow these steps:
 
-### Prerequisites
+### 1\. Clone the Repository
 
-*   Docker
-*   Docker Compose
-*   Symfony CLI
+    git clone https://github.com/tuusuario/serene-chronicles.git
 
-### Installation
+### 2\. Navigate to the Project Directory
 
-1.  Clone the repository:
+    cd serene-chronicles
 
-        git clone https://github.com/yourusername/serene-chronicles.git
+### 3\. Create Symfony Project
 
-2.  Navigate to the project directory:
+Create a new Symfony project using Symfony CLI:
 
-        cd serene-chronicles
+    symfony new ./ --version=7.* --webapp
 
-3.  Create the Symfony project:
+This command creates a new Symfony project with the necessary structure, including assets and a default web server configuration.
 
-        docker exec -it serene_chronicles_php-apache_1 symfony new ./ --version=7.* --webapp
+### 4\. Build and Start Docker Containers
 
-4.  Build and start the Docker containers:
+If not already done, build and start the Docker containers:
 
-        docker-compose up --build
+    docker-compose up --build
+
+This command builds the necessary Docker images and starts the containers defined in `docker-compose.yml`.
+
+### 5\. Access the Application
+
+Access your application in the browser at `http://localhost:9090`.
+
+Project Setup
+-------------
+
+We have configured our project to use Docker for the environment setup and Symfony for the application framework. Here are the main configurations and steps we followed:
+
+### Docker Configuration
+
+Our Docker setup includes a PHP-Apache container and a MySQL container. Here is the `docker-compose.yml` file:
 
 
-### Database Configuration
+    version: '3.8'
+    
+    services:
+      php-apache:
+        build:
+          context: .
+          dockerfile: Dockerfile
+        volumes:
+          - ./src/:/var/www/html/
+        ports:
+          - "9090:80"
+          - "9091:8000"
+        environment:
+          - APACHE_RUN_USER=www-data
+          - APACHE_RUN_GROUP=www-data
+          - DATABASE_URL=mysql://myuser:mypassword@mysql:3306/mydatabase
+        networks:
+          - app-network
+    
+      mysql:
+        image: mysql:latest
+        environment:
+          MYSQL_DATABASE: mydatabase
+          MYSQL_USER: myuser
+          MYSQL_PASSWORD: mypassword
+          MYSQL_ROOT_PASSWORD: rootpassword
+        volumes:
+          - mysql_data:/var/lib/mysql
+        networks:
+          - app-network
+    
+    volumes:
+      mysql_data:
+    
+    networks:
+      app-network:
+        driver: bridge
 
-Create a `.env.local` file with the following content to configure the database connection:
 
-    DATABASE_URL="mysql://myuser:mypassword@mysql:3306/mydatabase?serverVersion=5.7"
+### Dockerfile Configuration
 
-### Doctrine Configuration
+Our Dockerfile is set up to install all necessary dependencies, including PHP extensions, Node.js, and Symfony CLI. Here is the `Dockerfile`:
 
-Create the `config/packages/doctrine.yaml` file with the following content:
+
+    # Use official PHP image with Apache
+    FROM php:8.2-apache
+    
+    # Install necessary dependencies to build extensions and librabbitmq
+    RUN apt-get update && apt-get install -y \
+        libicu-dev \
+        libpq-dev \
+        libxslt-dev \
+        libpng-dev \
+        libjpeg-dev \
+        libfreetype6-dev \
+        libssl-dev \
+        libsodium-dev \
+        libssh-dev \
+        libmagickwand-dev \
+        libmagickcore-dev \
+        wget \
+        unzip \
+        git \
+        pkg-config \
+        librabbitmq-dev \
+        curl \
+        libmariadb-dev-compat \
+        libmariadb-dev
+    
+    # Install PHP extensions
+    RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+        && docker-php-ext-install \
+        intl \
+        pdo_mysql \
+        xsl \
+        gd \
+        opcache \
+        sodium \
+        bcmath
+    
+    # Install AMQP extension
+    RUN pecl install amqp \
+        && docker-php-ext-enable amqp
+    
+    # Install Composer
+    RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+    
+    # Enable Apache rewrite module
+    RUN a2enmod rewrite
+    
+    # Install Node.js and npm
+    RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - \
+        && apt-get install -y nodejs
+    
+    # Install Symfony CLI
+    RUN wget https://get.symfony.com/cli/installer -O - | bash \
+        && mv /root/.symfony*/bin/symfony /usr/local/bin/symfony
+    
+    # Configure Apache to point to /var/www/html/public directory
+    RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf
+    RUN sed -i 's!/var/www/html!/var/www/html/public!g' /etc/apache2/apache2.conf
+    
+    # Expose port 80
+    EXPOSE 80
+    
+    # Set working directory
+    WORKDIR /var/www/html
+    
+    # Copy application source code into the container
+    COPY . /var/www/html
+    
+    # Optionally grant permissions to www-data user
+    # RUN chown -R www-data:www-data /var/www/html
+    
+    # Run Apache in foreground
+    CMD ["apache2-foreground"]
+
+
+### Setting Up Database
+
+We configured Doctrine to use MySQL. Here is the `doctrine.yaml` configuration file:
+
 
     doctrine:
         dbal:
-            driver: 'pdo_mysql'
-            server_version: '5.7'
             url: '%env(resolve:DATABASE_URL)%'
+            driver: 'pdo_mysql'
+            charset: utf8mb4
         orm:
             auto_generate_proxy_classes: true
             naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
             auto_mapping: true
+            mappings:
+                App:
+                    is_bundle: false
+                    type: annotation
+                    dir: '%kernel.project_dir%/src/Entity'
+                    prefix: 'App\Entity'
+                    alias: App
 
-### Install Dependencies
 
-Install required dependencies:
+### Installing Required Packages
+
+We installed the required packages using Composer:
 
     composer require symfony/orm-pack
+
     composer require --dev symfony/maker-bundle
 
-### Generate Entities
+Implementing Core Features
+--------------------------
 
-Generate the entity for the Post model:
+### Creating and Managing Posts
 
-    php bin/console make:entity Post
+We created the `Post` entity and the corresponding form type. We also set up validation for unique slugs:
 
-Define the fields for the Post entity according to your needs.
 
-### Create Database and Migrate
-
-Create the database and run migrations:
-
-    php bin/console doctrine:database:create
-    php bin/console make:migration
-    php bin/console doctrine:migrations:migrate
-
-### Fixtures
-
-Create and load fixtures to generate sample data:
-
-Install Faker:
-
-    composer require fakerphp/faker --dev
-
-Create a fixture class for the Post entity:
-
-    // src/DataFixtures/AppFixtures.php
-    namespace App\DataFixtures;
+    entityManager = $entityManager;
+        }
     
-    use App\Entity\Post;
-    use Doctrine\Bundle\FixturesBundle\Fixture;
-    use Doctrine\Persistence\ObjectManager;
-    use Faker\Factory;
-    
-    class AppFixtures extends Fixture
-    {
-        public function load(ObjectManager $manager)
+        public function buildForm(FormBuilderInterface $builder, array $options): void
         {
-            $faker = Factory::create();
+            $builder
+                ->add('title')
+                ->add('content')
+                ->add('slug')
+            ;
     
-            for ($i = 0; i < 10; $i++) {
-                $post = new Post();
-                $post->setTitle($faker->sentence);
-                $post->setContent($faker->paragraph);
-                $post->setCreatedAt($faker->dateTimeThisYear);
-                
-                $manager->persist($post);
-            }
+            $builder->addEventListener(FormEvents::POST_SUBMIT, function(FormEvent $event) {
+                $form = $event->getForm();
+                $post = $event->getData();
     
-            $manager->flush();
+                $existingPost = $this->entityManager->getRepository(Post::class)->findOneBy(['slug' => $post->getSlug()]);
+    
+                if ($existingPost && $existingPost->getId() !== $post->getId()) {
+                    $form->get('slug')->addError(new FormError('The slug is already in use.'));
+                }
+            });
+        }
+    
+        public function configureOptions(OptionsResolver $resolver): void
+        {
+            $resolver->setDefaults([
+                'data_class' => Post::class,
+            ]);
         }
     }
 
-Load the fixtures:
 
-    php bin/console doctrine:fixtures:load
+### Adding Slug Field to Existing Posts
 
-### View a Post
+We added a slug field to the `Post` entity and created a migration to update existing posts.
 
-Create a template to view a single post:
+    php bin/console make:migration
 
+    php bin/console doctrine:migrations:migrate
+
+### Post Templates
+
+We created templates for displaying the list of posts and individual post details.
+
+Here is the `post/index.html.twig`:
+
+
+    {# templates/post/index.html.twig #}
     {% extends 'base.html.twig' %}
     
-    {% block title %}{{ post.title }} | Serene Chronicles{% endblock %}
+    {% block title %}Posts | Serene Chronicles{% endblock %}
     
     {% block stylesheets %}
-    
+        
     {% endblock %}
     
     {% block body %}
+        
+            Recent Posts
+            
+                
+                Search
+            
+            {% for post in pagination.items %}
+                
+                    {{ post.title }}
+                    Published on {{ post.createdAt|date('F j, Y') }}
+                    {{ post.content|raw|slice(0, 200) }}...
+                    Read more
+                
+            {% endfor %}
+        
     
         
-            {{ post.title }}
-            Published on {{ post.createdAt|date('F j, Y') }}
+            {{ knp_pagination_render(pagination) }}
         
-        
-            {{ post.content|raw }}
-        
-    
     {% endblock %}
 
-### Style the Post
 
-Create a CSS file to style the post page:
+And here is the `post/show.html.twig` with the edit button added:
 
-    /* public/css/post.css */
+
+    {% extends 'base.html.twig' %}
     
-    body {
-        font-family: 'Georgia', serif;
-        line-height: 1.6;
-        background: #f4f4f4;
-        margin: 0;
-        padding: 0;
-    }
+    {% block stylesheets %}
+        
+    {% endblock %}
     
-    header {
-        background: #333;
-        color: #fff;
-        padding: 10px 0;
-        text-align: center;
-    }
+    {% block title %}{{ post.title }} | Serene Chronicles{% endblock %}
     
-    header h1 {
-        margin: 0;
-        font-size: 2rem;
-    }
-    
-    header nav ul {
-        list-style: none;
-        padding: 0;
-    }
-    
-    header nav ul li {
-        display: inline;
-        margin: 0 10px;
-    }
-    
-    header nav ul li a {
-        color: #fff;
-        text-decoration: none;
-    }
-    
-    article.post {
-        background: #fff;
-        margin: 20px auto;
-        padding: 20px;
-        max-width: 800px;
-        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    }
-    
-    .post-header {
-        border-bottom: 1px solid #eee;
-        margin-bottom: 20px;
-        padding-bottom: 10px;
-    }
-    
-    .post-title {
-        font-size: 2.5rem;
-        margin: 0;
-    }
-    
-    .post-meta {
-        color: #999;
-    }
-    
-    .post-content {
-        font-size: 1.125rem;
+    {% block body %}
+        
+            
+                {{ post.title }}
+                Published on {{ post.createdAt|date('F j, Y') }}
+            
+            
+                {{ post.content|raw }}
+            
+            Edit Post
+        
+    {% endblock %}
+
+
+### Adding Search Functionality
+
+We added a search form to the index page to search posts by title or content. Here is the updated `PostRepository` with the search functionality:
+
+
+    public function findByTitleOrContent(string $searchTerm) : \Doctrine\ORM\Query
+    {
+        return $this->createQueryBuilder('p')
+            ->where('p.title LIKE :searchTerm')
+            ->orWhere('p.content LIKE :searchTerm')
+            ->setParameter('searchTerm', '%' . $searchTerm . '%')
+            ->orderBy('p.created_at', 'DESC')
+            ->getQuery()
+        ;
     }
 
-### Run the Server
 
-Start the Symfony server:
+We also added pagination to the post listing using KnpPaginatorBundle. Here is the updated index action in the `PostController`:
 
-    symfony server:start
 
-Access the application in your browser:
-
-    http://localhost:9090
+    public function index(Request $request, PaginatorInterface $paginator): Response
+    {
+        $searchTerm = $request->query->get('search', '');
+    
+        $query = $this->getDoctrine()
+            ->getRepository(Post::class)
+            ->findByTitleOrContent($searchTerm);
+    
+        $pagination = $paginator->paginate(
+            $query,
+            $request->query->getInt('page', 1),
+            10
+        );
+    
+        return $this->render('post/index.html.twig', [
+            'pagination' => $pagination,
+        ]);
+    }
