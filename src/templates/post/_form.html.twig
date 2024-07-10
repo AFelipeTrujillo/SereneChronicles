@@ -17,6 +17,12 @@
     {{ form_errors(form.slug) }}
 </div>
 
+<div class="form-group">
+    {{ form_label(form.tags, 'Tags', {'label_attr': {'class': 'form-label'}}) }}
+    {{ form_widget(form.tags, {'attr': {'class': 'form-control', 'placeholder': 'Enter tags separated by commas'}}) }}
+    {{ form_errors(form.tags) }}
+</div>
+
 <button type="submit" class="btn btn-primary">{{ button_label|default('Save') }}</button>
 {% if delete %}
     {{ include('post/_delete_form.html.twig') }}
