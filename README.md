@@ -1,4 +1,4 @@
-README - Serene Chronicles
+Serene Chronicles
 ==========================
 
 Getting Started
